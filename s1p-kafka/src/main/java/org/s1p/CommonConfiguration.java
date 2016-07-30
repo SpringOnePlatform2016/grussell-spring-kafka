@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -32,7 +33,9 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.adapter.RecordFilterStrategy;
 import org.springframework.kafka.support.converter.StringJsonMessageConverter;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Gary Russell
@@ -63,6 +66,11 @@ public class CommonConfiguration {
 
 	@Bean
 	public ConsumerFactory<String, String> consumerFactory() {
+		return new DefaultKafkaConsumerFactory<>(consumerProperties());
+	}
+
+	@Bean
+	public Map<String, Object> consumerProperties() {
 		Map<String, Object> props = new HashMap<>();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.configProperties.getBrokerAddress());
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, "s1pGroup");
@@ -71,7 +79,7 @@ public class CommonConfiguration {
 		props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000);
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-		return new DefaultKafkaConsumerFactory<>(props);
+		return props;
 	}
 
 	@Bean
@@ -88,6 +96,23 @@ public class CommonConfiguration {
 				new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
 		factory.setMessageConverter(new StringJsonMessageConverter());
+		return factory;
+	}
+
+	@Bean
+	public ConcurrentKafkaListenerContainerFactory<String, String> retryKafkaListenerContainerFactory() {
+		ConcurrentKafkaListenerContainerFactory<String, String> factory =
+				new ConcurrentKafkaListenerContainerFactory<>();
+		factory.setConsumerFactory(consumerFactory());
+		factory.setRetryTemplate(new RetryTemplate());
+		factory.setRecordFilterStrategy(new RecordFilterStrategy<String, String>() {
+
+			@Override
+			public boolean filter(ConsumerRecord<String, String> consumerRecord) {
+				return consumerRecord.value().equals("bar");
+			}
+
+		});
 		return factory;
 	}
 
