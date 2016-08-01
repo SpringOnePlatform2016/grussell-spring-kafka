@@ -16,6 +16,9 @@
 
 package org.s1p.app8;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.s1p.CommonConfiguration;
 import org.s1p.ConfigProperties;
@@ -48,7 +51,8 @@ public class S1pKafkaApplication {
 			.run(args);
 		TestBean testBean = context.getBean(TestBean.class);
 		testBean.send("foo");
-		Thread.sleep(60000);
+		context.getBean(Listener.class).latch.await(60, TimeUnit.SECONDS);
+		Thread.sleep(5000);
 		context.close();
 	}
 
@@ -87,9 +91,12 @@ public class S1pKafkaApplication {
 
 	public static class Listener implements MessageListener<String, String> {
 
+		private final CountDownLatch latch = new CountDownLatch(1);
+
 		@Override
 		public void onMessage(ConsumerRecord<String, String> record) {
 			System.out.println("Received: " + record.value());
+			this.latch.countDown();
 		}
 
 	}

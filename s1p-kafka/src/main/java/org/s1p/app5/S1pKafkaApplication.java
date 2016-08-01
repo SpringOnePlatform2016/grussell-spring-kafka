@@ -16,6 +16,9 @@
 
 package org.s1p.app5;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.s1p.ConfigProperties;
 import org.s1p.Foo;
 import org.s1p.JsonConfiguration;
@@ -45,7 +48,7 @@ public class S1pKafkaApplication {
 			.run(args);
 		TestBean testBean = context.getBean(TestBean.class);
 		testBean.send(new Foo("foo", "bar"));
-		Thread.sleep(60000);
+		context.getBean(Listener.class).latch.await(60, TimeUnit.SECONDS);
 		context.close();
 	}
 
@@ -75,9 +78,12 @@ public class S1pKafkaApplication {
 
 	public static class Listener {
 
+		private final CountDownLatch latch = new CountDownLatch(1);
+
 		@KafkaListener(topics = "${kafka.fooTopic}")
 		public void listen(Foo foo) {
 			System.out.println("Received: " + foo);
+			this.latch.countDown();
 		}
 
 	}
