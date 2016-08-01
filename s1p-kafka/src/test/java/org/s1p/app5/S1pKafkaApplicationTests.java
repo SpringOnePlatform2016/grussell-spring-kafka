@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.s1p.app;
+package org.s1p.app5;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
