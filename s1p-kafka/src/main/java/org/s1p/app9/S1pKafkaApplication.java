@@ -16,15 +16,12 @@
 
 package org.s1p.app9;
 
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.s1p.CommonConfiguration;
 import org.s1p.ConfigProperties;
-import org.s1p.app9.S1pKafkaApplication.ManualCommitsConfiguration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -46,7 +43,7 @@ import org.springframework.kafka.support.Acknowledgment;
  *
  */
 @SpringBootApplication
-@Import({ ManualCommitsConfiguration.class, ConfigProperties.class })
+@Import({ CommonConfiguration.class, ConfigProperties.class })
 @EnableKafka
 public class S1pKafkaApplication {
 
@@ -57,7 +54,6 @@ public class S1pKafkaApplication {
 		TestBean testBean = context.getBean(TestBean.class);
 		testBean.send("foo");
 		context.getBean(Listener.class).latch.await(60, TimeUnit.SECONDS);
-		Thread.sleep(5000);
 		context.close();
 	}
 
@@ -79,17 +75,6 @@ public class S1pKafkaApplication {
 		containerProperties.setMessageListener(listener());
 		containerProperties.setAckMode(AckMode.MANUAL_IMMEDIATE);
 		return new KafkaMessageListenerContainer<>(consumerFactory, containerProperties);
-	}
-
-	public static class ManualCommitsConfiguration extends CommonConfiguration {
-
-		@Override
-		public Map<String, Object> consumerProperties() {
-			Map<String, Object> consumerProperties = super.consumerProperties();
-			consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-			return consumerProperties;
-		}
-
 	}
 
 	public static class TestBean {

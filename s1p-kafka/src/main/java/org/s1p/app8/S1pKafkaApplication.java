@@ -52,7 +52,6 @@ public class S1pKafkaApplication {
 		TestBean testBean = context.getBean(TestBean.class);
 		testBean.send("foo");
 		context.getBean(Listener.class).latch.await(60, TimeUnit.SECONDS);
-		Thread.sleep(5000);
 		context.close();
 	}
 
